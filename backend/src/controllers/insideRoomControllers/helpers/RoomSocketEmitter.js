@@ -17,5 +17,13 @@ module.exports = {
 
   skipVoteUpdate(io, roomId, data) {
     this.emit(io, roomId, 'skipVoteUpdate', { ...data, reason: 'new_song_started' });
+  },
+
+  songPaused(io, roomId, data) {
+    this.emit(io, roomId, 'songPaused', data);
+  },
+
+  songResumed(io, roomId, data) {
+    this.emit(io, roomId, 'songResumed', data);
   }
 };

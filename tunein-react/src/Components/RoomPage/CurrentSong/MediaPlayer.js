@@ -44,9 +44,27 @@ const MediaPlayer = ({ videoId, startTime = 0, muted = false, onEnded }) => {
             return false;
         };
 
+        window.pauseYouTubePlayer = () => {
+            if (youtubePlayerRef.current && playerReady) {
+                try { youtubePlayerRef.current.pauseVideo(); return true; }
+                catch { return false; }
+            }
+            return false;
+        };
+
+        window.playYouTubePlayer = () => {
+            if (youtubePlayerRef.current && playerReady) {
+                try { youtubePlayerRef.current.playVideo(); return true; }
+                catch { return false; }
+            }
+            return false;
+        };
+
         return () => {
             window.getYouTubePlayerCurrentTime = null;
             window.setYouTubePlayerCurrentTime = null;
+            window.pauseYouTubePlayer = null;
+            window.playYouTubePlayer = null;
         };
     }, [playerReady]);
 

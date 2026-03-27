@@ -5,8 +5,9 @@ import { useLiveViewers } from './useLiveViewers';
 import CreatorSkipButton from './CreatorSkipButton';
 import VoteSkipButton from './VoteSkipButton';
 import SkipVoteDisplay from './SkipVoteDisplay';
+import PauseButton from './PauseButton';
 
-const SkipSong = ({ onSkip }) => {
+const SkipSong = ({ onSkip, isPaused }) => {
   const { roomId, roomCreator } = useSocket();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // Mobile/Tablet
@@ -22,29 +23,30 @@ const SkipSong = ({ onSkip }) => {
 
   if (isCreator) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: { xs: 0.5, md: 1 }, // Reduced gap on mobile
-        minWidth: isMobile ? 'auto' : '200px', // Auto width on mobile
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: { xs: 0.5, md: 1 },
+        minWidth: isMobile ? 'auto' : '200px',
         alignItems: 'flex-end',
-        overflow: 'hidden', // Prevent overflow
-        maxWidth: '100%' // Don't exceed container width
+        overflow: 'hidden',
+        maxWidth: '100%'
       }}>
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          gap: { xs: 0.5, md: 1 }, // Reduced gap on mobile
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: { xs: 0.5, md: 1 },
           overflow: 'hidden',
           maxWidth: '100%'
         }}>
+          <PauseButton isPaused={isPaused} />
           <CreatorSkipButton onSkip={onSkip} />
           <SkipVoteDisplay skipData={skipData} showCreatorMode={true} />
         </Box>
-        {!isMobile && ( // Hide subtitle on mobile to save space
+        {!isMobile && (
           <Typography variant="caption" color="text.secondary" align="center" display="block">
-            Room Creator - Instant Skip
+            Room Creator Controls
           </Typography>
         )}
       </Box>
@@ -52,20 +54,20 @@ const SkipSong = ({ onSkip }) => {
   }
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: { xs: 0.5, md: 1 }, // Reduced gap on mobile
-      minWidth: isMobile ? 'auto' : '200px', // Auto width on mobile
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: { xs: 0.5, md: 1 },
+      minWidth: isMobile ? 'auto' : '200px',
       alignItems: 'flex-end',
-      overflow: 'hidden', // Prevent overflow
-      maxWidth: '100%' // Don't exceed container width
+      overflow: 'hidden',
+      maxWidth: '100%'
     }}>
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        gap: { xs: 0.5, md: 1 }, // Reduced gap on mobile
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: { xs: 0.5, md: 1 },
         overflow: 'hidden',
         maxWidth: '100%'
       }}>

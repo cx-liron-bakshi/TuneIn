@@ -34,7 +34,7 @@ const SyncButton = styled(Button)(({ theme }) => ({
     }
 }));
 
-const SongWidget = ({ currentSong, getElapsedSeconds }) => {
+const SongWidget = ({ currentSong, getElapsedSeconds, isPaused = false }) => {
     const [progress, setProgress] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -117,9 +117,10 @@ const SongWidget = ({ currentSong, getElapsedSeconds }) => {
             return;
         }
 
-        setProgress(0);
-        setCurrentTime(0);
         setDuration(currentSong.duration || 0);
+
+        // Immediate update avoids 0:00 flash on resume and new-joiner load
+        updateProgress();
 
         timeoutRef.current = setTimeout(() => {
             timeoutRef.current = null;
@@ -138,6 +139,19 @@ const SongWidget = ({ currentSong, getElapsedSeconds }) => {
             }
         };
     }, [currentSong?.id, currentSong?.startTime]);
+
+    // Stop progress interval when song is paused
+    useEffect(() => {
+        if (!isPaused) return;
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+    }, [isPaused]);
 
     if (!currentSong) return null;
 
