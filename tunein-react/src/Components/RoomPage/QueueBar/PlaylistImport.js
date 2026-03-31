@@ -82,7 +82,7 @@ const PlaylistImport = () => {
           sx={{ ...inputSx, mb: 0.5 }}
         />
         <Typography variant="caption" sx={{ display: 'block', color: 'rgba(255,255,255,0.35)', mb: 1.5, fontSize: '0.7rem' }}>
-          Supports YouTube &amp; YouTube Music playlists
+          Supports YouTube &amp; YouTube Music playlists · paste a single song for radio mode
         </Typography>
 
         {/* Max songs + Import button on same row */}

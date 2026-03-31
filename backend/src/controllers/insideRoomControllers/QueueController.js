@@ -44,9 +44,15 @@ exports.importPlaylistToQueue = async (req, res) => {
     const { playlistUrl, limit } = req.body;
 
     // 1. Parse playlist ID from URL
+    // If no list param but a video ID exists, use YouTube radio mode (RD{videoId})
     let listId;
     try {
-      listId = new URL(playlistUrl).searchParams.get('list');
+      const parsed = new URL(playlistUrl);
+      listId = parsed.searchParams.get('list');
+      if (!listId) {
+        const videoId = parsed.searchParams.get('v');
+        if (videoId) listId = `RD${videoId}`;
+      }
     } catch (_) {}
     if (!listId) return res.status(400).json({ error: 'Invalid playlist URL' });
 
