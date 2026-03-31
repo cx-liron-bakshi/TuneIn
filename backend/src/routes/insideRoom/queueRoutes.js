@@ -12,4 +12,7 @@ router.get('/:roomId', auth, queueController.getRoomQueue);
 // Remove song from queue (by index)
 router.delete('/:roomId/:songIndex', auth, queueController.removeSongFromQueue);
 
+// Import all songs from a YouTube / YT Music playlist URL
+router.post('/:roomId/import-playlist', auth, queueController.importPlaylistToQueue);
+
 module.exports = router;

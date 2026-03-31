@@ -1,11 +1,14 @@
-import { Box, Typography, IconButton } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, IconButton, Tabs, Tab } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchSong from './SearchSong';
+import PlaylistImport from './PlaylistImport';
 import SongQueue from './SongQueue';
 
 const QueueBar = ({ roomName, isOpen, setIsOpen }) => {
-  
+  const [activeTab, setActiveTab] = useState(0);
+
   return (
     <>
         <IconButton
@@ -107,19 +110,28 @@ const QueueBar = ({ roomName, isOpen, setIsOpen }) => {
             overflow: 'hidden'
           }}
         >
-          <Typography variant="h6" sx={{ 
-            mb: 1, 
-            textAlign: 'center',
-            fontSize: { 
-              xs: '0.9rem',   // Smaller on mobile
-              md: '1.1rem'    // Normal on desktop
-            },
-            color: 'rgba(255,255,255,0.8)'
-          }}>
-            Music Controls
-          </Typography>
-          
-          <SearchSong />
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            sx={{
+              mb: 1,
+              minHeight: 36,
+              '& .MuiTabs-indicator': { backgroundColor: '#1DB954' },
+              '& .MuiTab-root': {
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '0.75rem',
+                minHeight: 36,
+                padding: '6px 12px',
+                textTransform: 'none',
+              },
+              '& .Mui-selected': { color: '#1DB954 !important' },
+            }}
+          >
+            <Tab label="Search" />
+            <Tab label="Import Playlist" />
+          </Tabs>
+
+          {activeTab === 0 ? <SearchSong /> : <PlaylistImport />}
           
           <Box sx={{ 
             mt: 2, 
