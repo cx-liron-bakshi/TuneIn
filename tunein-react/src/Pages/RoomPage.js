@@ -65,12 +65,15 @@ const RoomPage = () => {
     const token = localStorage.getItem('authToken');
     const newSocket = io(process.env.REACT_APP_API_URL, {
       auth: { token },
-      transports: ['websocket']
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
     });
 
     newSocket.on('connect', () => {
       console.log('RoomPage socket connected successfully');
-      newSocket.emit('joinRoom', roomId);
     });
 
     newSocket.on('disconnect', () => {

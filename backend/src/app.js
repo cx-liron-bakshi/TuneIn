@@ -88,6 +88,10 @@ const io = socketIo(server, {
     origin: ['https://tuneinapp.me', process.env.FRONTEND_URL || 'http://localhost:3000'],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 5 * 60 * 1000,
+    skipMiddlewares: true
   }
 });
 

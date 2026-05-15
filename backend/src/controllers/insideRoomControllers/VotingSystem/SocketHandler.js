@@ -11,12 +11,15 @@ class SocketHandler {
       });
 
       // Handle room joining with enhanced tracking
-      socket.on('joinRoom', async (roomId) => {
+      socket.on('joinRoom', async (roomId, ack) => {
         socket.join(`room-${roomId}`);
         socket.roomId = roomId;
 
         // Update viewer count and emit to all users
         await this.updateRoomViewerCount(roomId, io, 'user_joined');
+        if (typeof ack === 'function') {
+          ack({ ok: true, roomId, recovered: Boolean(socket.recovered) });
+        }
       });
 
       // Handle room leaving with cleanup
