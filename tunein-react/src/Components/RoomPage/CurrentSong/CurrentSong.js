@@ -7,7 +7,7 @@ import { useSocket } from '../Context/SocketContext';
 import SkipSong from './SkipSong/SkipSong';
 import CountDownMessage from './CountDownMessage';
 
-const INTRO_VIDEO_ID = 'UVsHJP1D_Io';
+import { INTRO_VIDEO_ID } from '../../../constants';
 
 const CurrentSong = () => {
   const [currentSong, setCurrentSong] = useState(null);

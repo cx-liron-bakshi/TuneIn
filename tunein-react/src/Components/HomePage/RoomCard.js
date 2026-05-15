@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
+import { DEFAULT_ROOM_IMAGE } from '../../constants';
 
 const RoomCard = ({ room }) => {
   const navigate = useNavigate();
@@ -67,7 +68,8 @@ const RoomCard = ({ room }) => {
         <CardMedia
           component="img"
           height="140"
-          image={imageError ? "/ProjectImages/default-room-image.jpg" : room.image}
+          loading="lazy"
+          image={imageError ? DEFAULT_ROOM_IMAGE : room.image}
           alt={room.name}
           onError={() => setImageError(true)}
           sx={{ objectFit: 'cover' }}
@@ -126,4 +128,4 @@ const RoomCard = ({ room }) => {
   );
 };
 
-export default RoomCard;
+export default React.memo(RoomCard);

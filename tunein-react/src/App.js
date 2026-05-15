@@ -4,6 +4,7 @@ import HomePage from "./Pages/HomePage";
 import RoomPage from "./Pages/RoomPage";
 import AuthCallbackPage from "./Pages/AuthCallbackPage";
 import { AuthProvider, useAuth } from "./Components/AuthPage/AuthContext";
+import ErrorBoundary from "./Components/.reusable/ErrorBoundary";
 
 function App() {
 
@@ -18,6 +19,7 @@ function App() {
   };
 
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Router>
         <Routes>
@@ -29,6 +31,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

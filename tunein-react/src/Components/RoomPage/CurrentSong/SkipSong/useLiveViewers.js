@@ -26,7 +26,6 @@ export const useLiveViewers = (roomId, isCreator) => {
         );
         setSkipData(response.data);
         setError(''); // Clear any previous errors
-        console.log('[HOOK] Initial data loaded:', response.data);
       } catch (err) {
         console.error('[HOOK] Error getting initial skip data:', err);
         setError('Failed to load skip data');
@@ -41,7 +40,6 @@ export const useLiveViewers = (roomId, isCreator) => {
     if (!newSocket) return;
 
     const handleSkipVoteUpdate = (data) => {
-      console.log('[HOOK] Skip vote update received:', data);
       setSkipData(prev => ({
         ...prev,
         liveViewers: data.liveViewers,
@@ -51,7 +49,6 @@ export const useLiveViewers = (roomId, isCreator) => {
     };
 
     const handleViewerCountUpdate = (data) => {
-      console.log('[HOOK] Viewer count update:', data);
       setSkipData(prev => ({
         ...prev,
         liveViewers: data.liveViewers,
@@ -63,7 +60,6 @@ export const useLiveViewers = (roomId, isCreator) => {
     };
 
     const handleSongSkippedByVote = (data) => {
-      console.log('[HOOK] Song skipped by vote:', data);
       setSkipData(prev => ({
         ...prev,
         skipCount: 0,
@@ -72,7 +68,6 @@ export const useLiveViewers = (roomId, isCreator) => {
     };
 
     const handleCurrentSongUpdate = (data) => {
-      console.log('[HOOK] Current song updated - resetting vote state');
       // Reset vote state when new song starts
       setSkipData(prev => ({
         ...prev,
@@ -82,7 +77,6 @@ export const useLiveViewers = (roomId, isCreator) => {
     };
 
     const handleSongChanged = () => {
-      console.log('[HOOK] Song changed - resetting vote state');
       setSkipData(prev => ({
         ...prev,
         skipCount: 0,
@@ -118,7 +112,6 @@ export const useLiveViewers = (roomId, isCreator) => {
 
       // Update local state immediately with server response
       setSkipData(response.data);
-      console.log('[HOOK] Vote submitted:', response.data);
 
       return true;
     } catch (err) {

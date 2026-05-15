@@ -1,4 +1,5 @@
 const Room = require('../../models/Room');
+const xss = require('xss');
 
 // Send message to room chat
 exports.sendMessage = async (req, res) => {
@@ -28,7 +29,7 @@ exports.sendMessage = async (req, res) => {
       userId,
       userName: nickname || req.user.username,
       userPicture: userPicture || null,
-      message: message.trim(),
+      message: xss(message.trim()),
       timestamp: Date.now(),
       videoTimestamp: videoTimestamp || null
     };

@@ -1,14 +1,25 @@
+const jwt = require('jsonwebtoken');
 const LiveViewersController = require('./LiveViewersController');
 const SkipVotingService = require('./SkipVotingService');
 
 class SocketHandler {
   static setupSocketHandlers(io) {
-    io.on('connection', (socket) => {
+    // Authenticate socket connections via JWT
+    io.use((socket, next) => {
+      const token = socket.handshake.auth?.token;
+      if (!token) {
+        return next(new Error('Authentication required'));
+      }
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.userId = decoded.userId;
+        next();
+      } catch (err) {
+        return next(new Error('Invalid or expired token'));
+      }
+    });
 
-      // Handle user identification for proper vote tracking
-      socket.on('setUserId', (userId) => {
-        socket.userId = userId;
-      });
+    io.on('connection', (socket) => {
 
       // Handle room joining with enhanced tracking
       socket.on('joinRoom', async (roomId) => {

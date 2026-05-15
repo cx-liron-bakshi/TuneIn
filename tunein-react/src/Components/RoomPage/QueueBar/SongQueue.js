@@ -37,15 +37,11 @@ const SongQueue = () => {
 
   useEffect(() => {
     if (!newSocket || !roomId) {
-      console.log('SongQueue: Waiting for socket connection...');
       return;
     }
 
-    console.log('SongQueue: Setting up queue listeners');
-
     // Listen for queue updates
     newSocket.on('queueUpdated', (data) => {
-      console.log('Received queue update:', data);
       setQueue(data.queue || []);
     });
 
@@ -163,7 +159,7 @@ const SongQueue = () => {
 
               return (
                 <SongCard
-                  key={`${song.id}-${index}`}
+                  key={song.id}
                   song={formatSongForQueue(song)}
                   context={canRemove ? 'queue' : 'display'}
                   onAction={canRemove ? (s) => handleRemoveSong(s, index) : null}

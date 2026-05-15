@@ -33,7 +33,6 @@ const RoomPage = () => {
       } catch (err) {
         console.error("Error fetching room data:", err);
         if (err.response && err.response.status === 404) {
-          alert("There's no such room.");
           navigate('/home');
         } else if (err.response && err.response.status === 401) {
           logout();
@@ -58,10 +57,6 @@ const RoomPage = () => {
       return;
     }
 
-    console.log('RoomPage: Creating socket connection for room:', roomId);
-    console.log('Creator of the room:', room?.creator);
-    
-
     const token = localStorage.getItem('authToken');
     const newSocket = io(process.env.REACT_APP_API_URL, {
       auth: { token },
@@ -69,12 +64,10 @@ const RoomPage = () => {
     });
 
     newSocket.on('connect', () => {
-      console.log('RoomPage socket connected successfully');
       newSocket.emit('joinRoom', roomId);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('RoomPage socket disconnected');
     });
 
     newSocket.on('connect_error', (error) => {
@@ -84,7 +77,6 @@ const RoomPage = () => {
     setRoomSocket(newSocket);
 
     return () => {
-      console.log('RoomPage: Cleaning up socket connection');
       newSocket.disconnect();
       setRoomSocket(null);
     };

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../Components/AuthPage/AuthContext';
 import imageCompression from 'browser-image-compression';
+import { DEFAULT_ROOM_IMAGE } from '../../constants';
 
 const CreateRoomModal = ({ open, onClose, onSubmit }) => {
   const { user } = useAuth();
@@ -24,7 +25,6 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
     isHidden: false,
   });
 
-  const defaultRoomImagePath = "/ProjectImages/default-room-image.jpg";
   const [imagePreview, setImagePreview] = useState(null);
   const [isImageLoading, setIsImageLoading] = useState(true); // Keep for image preview
   const [errors, setErrors] = useState({});
@@ -32,7 +32,7 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
   useEffect(() => {
     if (open) {
       setIsImageLoading(true);
-      setImagePreview(defaultRoomImagePath);
+      setImagePreview(DEFAULT_ROOM_IMAGE);
       // Reset form fields when modal opens, ensuring defaults are set
       setFormData({
         name: '',
@@ -79,7 +79,7 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
       newErrors.genres = 'Maximum 5 genres allowed';
     }
 
-    if (!formData.imageFile && imagePreview === defaultRoomImagePath) {
+    if (!formData.imageFile && imagePreview === DEFAULT_ROOM_IMAGE) {
       newErrors.imageFile = 'Room image is required';
     } else if (formData.imageFile && !["image/jpeg", "image/png", "image/jpg"].includes(formData.imageFile.type)) {
       newErrors.imageFile = 'Image must be in JPG or PNG format';
@@ -108,7 +108,7 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
       let imageToUpload = formData.imageFile;
       if (!imageToUpload) {
         try {
-          const response = await fetch(defaultRoomImagePath);
+          const response = await fetch(DEFAULT_ROOM_IMAGE);
           const blob = await response.blob();
           imageToUpload = new File([blob], "default-room-image.jpg", { type: blob.type });
         } catch (error) {
@@ -160,7 +160,7 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
       imageFile: null,
       isHidden: false,
     });
-    setImagePreview(defaultRoomImagePath);
+    setImagePreview(DEFAULT_ROOM_IMAGE);
     setIsImageLoading(true);
     setErrors({});
   };
@@ -173,7 +173,7 @@ const CreateRoomModal = ({ open, onClose, onSubmit }) => {
   const handleImageLoad = () => setIsImageLoading(false);
   const handleImageError = () => {
     setIsImageLoading(false);
-    if (imagePreview !== defaultRoomImagePath) setImagePreview(defaultRoomImagePath);
+    if (imagePreview !== DEFAULT_ROOM_IMAGE) setImagePreview(DEFAULT_ROOM_IMAGE);
   };
 
   const theme = useTheme();

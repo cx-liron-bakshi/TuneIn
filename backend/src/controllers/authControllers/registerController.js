@@ -1,5 +1,6 @@
 const User = require('../../models/User');
 const bcrypt = require('bcryptjs');
+const validator = require('validator');
 const { uploadToImgur } = require('../../utils/imgurUploader');
 
 function parseGenres(genresStr) {
@@ -9,13 +10,15 @@ function parseGenres(genresStr) {
 }
 
 exports.register = async (req, res) => {
-  console.log("Registering user...");
   try {
     const { email, nickname, password, retypePassword, genres } = req.body;
 
     // Validate required fields
     if (!email || !nickname || !password || !retypePassword) {
       return res.status(400).json({ message: 'All fields are required.' });
+    }
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
     }
     if (password.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters.' });

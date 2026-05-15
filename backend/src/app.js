@@ -5,6 +5,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const session = require('express-session');
 const passport = require('passport');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 require('./config/passport');
 
@@ -22,6 +24,29 @@ const SocketHandler = require('./controllers/insideRoomControllers/VotingSystem/
 
 const app = express();
 
+// Security headers
+app.use(helmet());
+
+// Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many auth attempts, please try again later.' }
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth/', authLimiter);
+
 // Dynamic CORS configuration for production
 const allowedOrigins = [
   'http://localhost:3000',
@@ -37,7 +62,6 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.warn('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -47,14 +71,19 @@ app.use(cors({
   exposedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Session and Passport middleware
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());

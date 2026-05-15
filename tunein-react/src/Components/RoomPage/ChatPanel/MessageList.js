@@ -49,7 +49,7 @@ const MessageList = ({ messages, onUsernameClick, currentUserIsCreator, currentU
           
           return (
             <Message 
-              key={message.id || `msg-${index}`} 
+              key={message.id || message.timestamp}
               message={message} 
               onUsernameClick={onUsernameClick}
               showCreatorBadge={isCreatorMessage}

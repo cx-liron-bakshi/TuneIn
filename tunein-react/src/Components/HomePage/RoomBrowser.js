@@ -55,7 +55,8 @@ const RoomBrowser = () => {
           userId: userId
         }
       });
-      setRooms(response.data);
+      const data = response.data;
+      setRooms(data.rooms || data);
       setError(null);
     } catch (err) {
       console.error('Error fetching rooms:', err);
@@ -138,7 +139,6 @@ const RoomBrowser = () => {
         }
       });
 
-      console.log('Room created:', response.data);
       // Refresh rooms after creation
       fetchRooms();
 

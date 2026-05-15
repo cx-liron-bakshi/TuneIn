@@ -224,7 +224,7 @@ POST /api/live-viewers/:roomId/vote-skip     toggle skip vote
 
 POST /api/chat/:roomId/send         send message
 
-GET  /api/rooms                     list rooms (hidden rooms only shown to creator)
+GET  /api/rooms?page=1&limit=20     list rooms (paginated, hidden rooms only shown to creator)
 POST /api/rooms                     createRoom
 GET  /api/rooms/:roomId             getRoom (returns creator populated)
 
@@ -233,6 +233,7 @@ POST /api/auth/login
 POST /api/auth/register
 GET  /api/auth/google               Google OAuth entry
 GET  /api/auth/google/callback
+POST /api/auth/google/exchange      Exchange one-time code for JWT (used after OAuth redirect)
 ```
 
 ---
@@ -257,7 +258,8 @@ GET  /api/auth/google/callback
 |---|---|---|
 | `joinRoom` | `roomId` | Enter room, tracked for viewer count |
 | `leaveRoom` | `roomId` | Leave room |
-| `setUserId` | `userId` | Associate socket with user for vote tracking |
+
+> Note: `setUserId` was removed. User identity is now extracted from the JWT during socket authentication middleware.
 
 ---
 
@@ -444,8 +446,7 @@ OAUTH_CLIENT_SECRET
 GOOGLE_CALLBACK_URL    http://localhost:5000/api/auth/google/callback
 SESSION_SECRET
 FRONTEND_URL           http://localhost:3000 (local) / https://tuneinapp.me (prod)
-SERVER_URL             Self-reference URL for internal axios calls (SkipVotingService)
-                       Falls back to http://localhost:5000 if unset — set this in prod
+                       (SERVER_URL no longer needed — internal calls use direct function calls)
 ```
 
 ### Frontend (`tunein-react/.env`)
@@ -471,12 +472,28 @@ Both `.env` files are gitignored. Production values are set directly in Northfla
 
 ---
 
+## Security
+
+| Feature | Implementation |
+|---|---|
+| Security headers | `helmet.js` middleware |
+| Rate limiting | `express-rate-limit` — 100 req/15min general, 20 req/15min on auth |
+| Body size limit | `express.json({ limit: '1mb' })` |
+| Session cookies | `httpOnly`, `sameSite: strict`, `secure` in production |
+| Socket.io auth | JWT verified via middleware on connection — `socket.userId` set from token |
+| OAuth flow | One-time code exchange (POST `/api/auth/google/exchange`) — token never in URL |
+| Chat sanitization | `xss` library on server before storing/emitting messages |
+| Playlist URLs | Whitelist: only `youtube.com`, `music.youtube.com`, `m.youtube.com` domains accepted |
+| Email validation | `validator.isEmail()` on registration |
+
+---
+
 ## Known Limitations & Gotchas
 
 | Issue | Detail |
 |---|---|
 | In-memory state resets on deploy | `roomsPaused`, `roomsInCountdown`, `roomTimers`, `roomSkipVotes` all live in process memory. A deploy clears them. Paused rooms stay stuck until skipped; countdown rooms may double-advance. |
-| `SERVER_URL` fallback | `SkipVotingService` calls `process.env.SERVER_URL \|\| 'http://localhost:5000'` for internal skip requests. Works by coincidence locally; must be set in prod. |
+| ~~`SERVER_URL` fallback~~ | Fixed — `SkipVotingService` now calls `CurrentSongController.playNextSong()` directly instead of making HTTP requests to itself. |
 | YouTube `startTime` is init-only | `playerVars.start` only applies at player creation. To seek a running player, always use `window.setYouTubePlayerCurrentTime()`. |
 | `pauseOnReady` was removed | An earlier attempt used a `pauseOnReady` prop on MediaPlayer. It was unreliable due to async fetch timing. The retry-loop effect in `CurrentSong.js` replaced it. Don't re-add it. |
 | SongWidget key is `currentSong?.id` | Changing this to `startTime` causes a remount on resume → 0:00 flash. Keep it as `id`. |

@@ -4,11 +4,14 @@ import {
   Typography,
   TextField,
   IconButton,
-  Paper
+  Paper,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ChatIcon from '@mui/icons-material/Chat';
 import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MessageList from './MessageList';
 import UserProfilePopup from './UserProfilePopup';
@@ -29,7 +32,9 @@ const ChatPanel = ({ roomId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [userProfile, setUserProfile] = useState(null);
   const [selectedUsername, setSelectedUsername] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
   const inputRef = useRef(null);
+  const navigate = useNavigate();
   const { newSocket, isConnected, roomCreator } = useSocket();
   const MAX_MESSAGES = 200;
 
@@ -40,8 +45,7 @@ const ChatPanel = ({ roomId }) => {
         const token = localStorage.getItem('authToken');
 
         if (!token) {
-          console.error('No auth token found');
-          window.location.href = '/auth';
+          navigate('/auth');
           return;
         }
 
@@ -66,7 +70,7 @@ const ChatPanel = ({ roomId }) => {
         console.error('Error fetching user profile:', error);
         if (error.response?.status === 401) {
           localStorage.removeItem('authToken');
-          window.location.href = '/auth';
+          navigate('/auth');
         }
       }
     };
@@ -150,9 +154,9 @@ const ChatPanel = ({ roomId }) => {
       console.error('Error sending message:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('authToken');
-        window.location.href = '/auth';
+        navigate('/auth');
       } else {
-        alert('Network error: Failed to send message. Please check your connection and try again.');
+        setSnackbar({ open: true, message: 'Failed to send message. Please check your connection.', severity: 'error' });
       }
     }
   };
@@ -247,6 +251,7 @@ const ChatPanel = ({ roomId }) => {
             }}
           />
           <IconButton
+            aria-label="Send message"
             onClick={handleSendMessage}
             disabled={!newMessage.trim() || !isConnected || !userProfile || newMessage.length > 50}
             sx={{
@@ -289,6 +294,16 @@ const ChatPanel = ({ roomId }) => {
           onClose={handleCloseProfilePopup} 
         />
       )}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </StyledChatContainer>
   );
 };

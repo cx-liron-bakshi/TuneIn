@@ -1,5 +1,3 @@
-const axios = require('axios');
-
 // In-memory storage for room skip votes
 const roomSkipVotes = new Map();
 
@@ -84,22 +82,11 @@ class SkipVotingService {
     const threshold = this.calculateThreshold(liveViewers);
 
     if (skipCount >= threshold && liveViewers > 0) {
-      console.log(`[SKIP TRIGGERED] Room ${roomId}: Threshold met! (${skipCount}/${threshold})`);
-      
       try {
-        // Trigger the actual skip
-        await axios.post(
-          `${process.env.SERVER_URL || 'http://localhost:5000'}/api/song/${roomId}/skip`,
-          { reason: 'majority_vote', voteCount: skipCount, threshold },
-          {
-            headers: { 
-              Authorization: authHeader,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        // Call playNextSong directly instead of making HTTP request to self
+        const CurrentSongController = require('../CurrentSongController');
+        await CurrentSongController.playNextSong(roomId, io, 'SkipSong');
 
-    
         // Emit skip notification
         io.to(`room-${roomId}`).emit('songSkippedByVote', {
           reason: 'majority_vote',
@@ -109,7 +96,7 @@ class SkipVotingService {
 
         return true;
       } catch (skipError) {
-        console.error('[SKIP ERROR] Error triggering skip:', skipError.response?.data || skipError.message);
+        console.error('[SKIP ERROR] Error triggering skip:', skipError.message);
         return false;
       }
     }

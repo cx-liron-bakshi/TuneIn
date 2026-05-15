@@ -78,7 +78,6 @@ const handleSongAction = async (song) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log('Song added to queue successfully!');
     setSearchResults([]); 
     } catch (err) {
     console.error('Error adding song to queue:', err);

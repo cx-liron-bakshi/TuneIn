@@ -43,18 +43,27 @@ exports.importPlaylistToQueue = async (req, res) => {
     const { roomId } = req.params;
     const { playlistUrl, limit } = req.body;
 
-    // 1. Parse playlist ID from URL
-    // If no list param but a video ID exists, use YouTube radio mode (RD{videoId})
+    // 1. Validate and parse playlist ID from URL
+    if (!playlistUrl || typeof playlistUrl !== 'string') {
+      return res.status(400).json({ error: 'Playlist URL is required' });
+    }
+
     let listId;
     try {
       const parsed = new URL(playlistUrl);
+      const allowedHosts = ['www.youtube.com', 'youtube.com', 'music.youtube.com', 'm.youtube.com'];
+      if (!allowedHosts.includes(parsed.hostname)) {
+        return res.status(400).json({ error: 'Only YouTube URLs are allowed' });
+      }
       listId = parsed.searchParams.get('list');
       if (!listId) {
         const videoId = parsed.searchParams.get('v');
         if (videoId) listId = `RD${videoId}`;
       }
-    } catch (_) {}
-    if (!listId) return res.status(400).json({ error: 'Invalid playlist URL' });
+    } catch (_) {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+    if (!listId) return res.status(400).json({ error: 'No playlist found in URL' });
 
     const apiKey = process.env.YOUTUBE_API_KEY;
     const maxResults = (limit && Number.isInteger(limit) && limit > 0 && limit <= 50) ? limit : 50;

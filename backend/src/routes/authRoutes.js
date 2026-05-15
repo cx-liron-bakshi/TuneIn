@@ -36,6 +36,9 @@ router.get(
   googleAuthController.googleCallback
 );
 
+// 2.5. Exchange one-time code for token (used by frontend after OAuth redirect)
+router.post('/google/exchange', googleAuthController.exchangeCode);
+
 // 3. Logout route (מנקה את ה-session)
 router.post('/logout', (req, res) => {
   req.logout((err) => {

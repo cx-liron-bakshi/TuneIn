@@ -11,6 +11,7 @@ import {
   CircularProgress 
 } from '@mui/material';
 import { useNavigate } from "react-router-dom";
+import { DEFAULT_PROFILE_IMAGE } from "../../constants";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -25,8 +26,7 @@ export default function Register() {
   const [msg, setMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   // Set default preview to the default profile pic path
-  const defaultProfilePicPath = "/ProjectImages/blank-profile-picture.png";
-  const [profilePicPreview, setProfilePicPreview] = useState(defaultProfilePicPath);
+  const [profilePicPreview, setProfilePicPreview] = useState(DEFAULT_PROFILE_IMAGE);
 
   // Helper to check if genres are comma separated
   const isGenresValid = (genres) => {
@@ -84,7 +84,7 @@ export default function Register() {
     if (!profilePicFile) {
       // Fetch the default image from public folder
       try {
-        const response = await fetch(defaultProfilePicPath);
+        const response = await fetch(DEFAULT_PROFILE_IMAGE);
         const blob = await response.blob();
         profilePicFile = new File([blob], "blank-profile-picture.png", { type: blob.type });
       } catch {

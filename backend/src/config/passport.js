@@ -24,7 +24,6 @@ passport.use(
           try {
             // Download Google profile picture and upload to Imgur
             imgurProfilePicUrl = await downloadAndUploadToImgur(profile.photos[0].value);
-            console.log('Successfully uploaded Google profile picture to Imgur:', imgurProfilePicUrl);
           } catch (imgurError) {
             console.error('Failed to upload Google profile picture to Imgur:', imgurError.message);
             // Continue with default picture if Imgur upload fails

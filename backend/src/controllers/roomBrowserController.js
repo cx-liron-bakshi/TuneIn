@@ -102,11 +102,28 @@ exports.getRooms = async (req, res) => {
       };
     }
     
-    const rooms = await Room.find(query)
-      .populate('creator', 'nickname profilePic')
-      .sort({ createdAt: -1 }); // Newest first
-    
-    res.json(rooms);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const [rooms, total] = await Promise.all([
+      Room.find(query)
+        .populate('creator', 'nickname profilePic')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Room.countDocuments(query)
+    ]);
+
+    res.json({
+      rooms,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     console.error('Room fetch error:', err);
     res.status(500).json({ message: 'Server error' });

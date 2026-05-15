@@ -13,16 +13,7 @@ export const useSocket = () => {
 export const SocketProvider = ({ children, newSocket, roomId, roomCreator}) => {
   const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(() => {
-  if (newSocket) {
-    // Send user ID to socket for proper tracking
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      newSocket.emit('setUserId', userId);
-      console.log('[SOCKET CONTEXT] Set user ID:', userId);
-    }
-  }
-}, [newSocket]);
+  // userId is now set server-side from JWT during socket authentication
 
   // Monitor the socket connection status
   useEffect(() => {
