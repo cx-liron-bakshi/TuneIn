@@ -185,6 +185,12 @@ const MediaPlayer = ({
         };
     }, [apiLoaded]);
 
+    // Volume changes must not reload or seek the video.
+    useEffect(() => {
+        if (!playerInstance || !playerReady) return;
+        applyVolume(playerInstance);
+    }, [volume, playerInstance, playerReady]);
+
     // Apply prop-driven playback changes without destroying the iframe.
     useEffect(() => {
         if (!playerInstance || !playerReady || !videoId) return;
@@ -198,7 +204,7 @@ const MediaPlayer = ({
         }
 
         loadVideo(videoId, startTime, shouldPlay);
-    }, [videoId, startTime, mode, shouldPlay, volume, playerInstance, playerReady]);
+    }, [videoId, startTime, mode, shouldPlay, playerInstance, playerReady]);
 
     // Expose player helpers globally for CurrentSong and legacy callers.
     useEffect(() => {

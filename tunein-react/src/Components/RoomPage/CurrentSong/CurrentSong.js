@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Slider, Stack, Snackbar, Typography } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import axios from 'axios';
 import MediaPlayer from './MediaPlayer';
 import SongWidget from './SongWidget';
@@ -9,7 +11,19 @@ import CountDownMessage from './CountDownMessage';
 
 const IDLE_AUDIO_VIDEO_ID = 'aZ5KJdoiQag';
 const IDLE_VOLUME = 1;
-const ACTIVE_VOLUME = 100;
+const DEFAULT_ACTIVE_VOLUME = 40;
+const SYNC_DRIFT_TOLERANCE_SECONDS = 3;
+const ROOM_VOLUME_KEY = 'tuneinRoomVolume';
+
+const getInitialVolume = () => {
+  try {
+    const storedVolume = Number(sessionStorage.getItem(ROOM_VOLUME_KEY));
+    if (Number.isFinite(storedVolume)) {
+      return Math.max(0, Math.min(100, storedVolume));
+    }
+  } catch {}
+  return DEFAULT_ACTIVE_VOLUME;
+};
 
 const CurrentSong = () => {
   const [currentSong, setCurrentSong] = useState(null);
@@ -21,6 +35,7 @@ const CurrentSong = () => {
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [showAudioGate, setShowAudioGate] = useState(true);
+  const [activeVolume, setActiveVolume] = useState(getInitialVolume);
   const initialStartTimeRef = useRef(0);
   const pauseRetryRef = useRef(null);
   const audioUnlockedRef = useRef(false);
@@ -52,7 +67,16 @@ const CurrentSong = () => {
     return diff;
   }, [getElapsedForSong]);
 
-  const commandPlayback = useCallback((song, paused, diff) => {
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(ROOM_VOLUME_KEY, String(activeVolume));
+    } catch {}
+    if (audioUnlockedRef.current && currentSong) {
+      window.tuneInYouTubePlayer?.setVolume?.(activeVolume);
+    }
+  }, [activeVolume, currentSong]);
+
+  const commandPlayback = useCallback((song, paused, diff, options = {}) => {
     if (!audioUnlockedRef.current) return false;
 
     const player = window.tuneInYouTubePlayer;
@@ -60,23 +84,49 @@ const CurrentSong = () => {
 
     setPlaybackBlocked(false);
     const effectiveDiff = diff ?? latestPlaybackRef.current.serverTimeDiff;
+    const force = Boolean(options.force);
 
     if (song) {
       const elapsed = getElapsedForSong(song, effectiveDiff, paused);
-      player.setVolume?.(ACTIVE_VOLUME);
+      const currentVideoId = player.getVideoId?.();
+      const currentTime = player.getCurrentTime?.();
+      const drift = Number.isFinite(currentTime) ? Math.abs(currentTime - elapsed) : Infinity;
+
+      player.setVolume?.(activeVolume);
       if (paused) {
-        const loaded = player.load?.(song.id, elapsed);
+        const loaded = currentVideoId !== song.id
+          ? player.load?.(song.id, elapsed)
+          : (force || drift > SYNC_DRIFT_TOLERANCE_SECONDS ? player.seekTo?.(elapsed) : true);
         player.pause?.();
         return Boolean(loaded);
       }
-      return Boolean(player.loadAndPlay?.(song.id, elapsed));
+
+      if (currentVideoId !== song.id) {
+        return Boolean(player.loadAndPlay?.(song.id, elapsed));
+      }
+
+      if (force || drift > SYNC_DRIFT_TOLERANCE_SECONDS) {
+        player.seekTo?.(elapsed);
+      }
+
+      const playerState = player.getPlayerState?.();
+      if (playerState !== window.YT?.PlayerState?.PLAYING) {
+        return Boolean(player.play?.());
+      }
+      return true;
     }
 
     player.setVolume?.(IDLE_VOLUME);
-    return Boolean(player.loadAndPlay?.(IDLE_AUDIO_VIDEO_ID, 0));
-  }, [getElapsedForSong]);
+    if (player.getVideoId?.() !== IDLE_AUDIO_VIDEO_ID || force) {
+      return Boolean(player.loadAndPlay?.(IDLE_AUDIO_VIDEO_ID, 0));
+    }
+    if (player.getPlayerState?.() !== window.YT?.PlayerState?.PLAYING) {
+      return Boolean(player.play?.());
+    }
+    return true;
+  }, [activeVolume, getElapsedForSong]);
 
-  const applyCurrentSongPayload = useCallback((data) => {
+  const applyCurrentSongPayload = useCallback((data, options = {}) => {
     const song = data.currentSong || null;
     const diff = syncTimeData(data.serverTime, song);
     const paused = Boolean(song?.pausedAt);
@@ -88,7 +138,7 @@ const CurrentSong = () => {
       setCountdownData({ countdown: 0, nextSong: null, clear: Date.now() });
     }
 
-    commandPlayback(song, paused, diff);
+    commandPlayback(song, paused, diff, options.playbackOptions);
   }, [commandPlayback, syncTimeData]);
 
   const reconcileCurrentSong = useCallback(async (reason = 'manual', options = {}) => {
@@ -101,7 +151,7 @@ const CurrentSong = () => {
       const { data } = await axios.get(`${process.env.REACT_APP_API_URL}/api/song/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      applyCurrentSongPayload(data);
+      applyCurrentSongPayload(data, options);
       setError(null);
       console.log('[PLAYBACK] Reconciled current song:', reason);
     } catch (err) {
@@ -116,10 +166,8 @@ const CurrentSong = () => {
     setAudioUnlocked(true);
     setShowAudioGate(false);
     setPlaybackBlocked(false);
-
-    const { currentSong: latestSong, isPaused: latestPaused, serverTimeDiff: latestDiff } = latestPlaybackRef.current;
-    commandPlayback(latestSong, latestPaused, latestDiff);
-  }, [commandPlayback]);
+    reconcileCurrentSong('audio-unlock', { playbackOptions: { force: true } });
+  }, [reconcileCurrentSong]);
 
   const handlePlaybackBlocked = useCallback(() => {
     if (!audioUnlockedRef.current) {
@@ -145,7 +193,7 @@ const CurrentSong = () => {
       setCurrentSong(prev => {
         const updatedSong = prev ? { ...prev, pausedAt: data.pausedAt, elapsedAtPause: data.elapsedAtPause } : prev;
         if (updatedSong) {
-          commandPlayback(updatedSong, true);
+          commandPlayback(updatedSong, true, undefined, { force: true });
         }
         return updatedSong;
       });
@@ -157,7 +205,7 @@ const CurrentSong = () => {
       const diff = syncTimeData(data.serverTime, data.song);
       setCurrentSong(data.song);
       setIsPaused(false);
-      commandPlayback(data.song, false, diff);
+      commandPlayback(data.song, false, diff, { force: true });
     };
 
     newSocket.on('currentSongUpdated', handleSongUpdate);
@@ -225,7 +273,7 @@ const CurrentSong = () => {
   const playerMode = currentSong ? (isPaused ? 'paused' : 'active') : 'idle';
   const playerVideoId = currentSong?.id || IDLE_AUDIO_VIDEO_ID;
   const playerStartTime = currentSong ? initialStartTimeRef.current : 0;
-  const playerVolume = currentSong ? ACTIVE_VOLUME : IDLE_VOLUME;
+  const playerVolume = currentSong ? activeVolume : IDLE_VOLUME;
   const shouldPlay = audioUnlocked && !isPaused;
 
   if (loading) {
@@ -270,17 +318,26 @@ const CurrentSong = () => {
 
       <Paper sx={{ p: { xs: 1.5, md: 1.5, lg: 1, xl: 1 }, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.4)', maxWidth: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
         {showAudioGate && (
-          <Alert
-            severity="info"
-            action={
-              <Button color="inherit" size="small" onClick={unlockAudio}>
-                Start listening
-              </Button>
-            }
-            sx={{ mb: 1, alignItems: 'center' }}
-          >
-            Enable room audio?
-          </Alert>
+          <Box sx={{ mb: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'rgba(25, 118, 210, 0.16)', border: '1px solid rgba(144, 202, 249, 0.35)', display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 700, lineHeight: 1.2 }}>
+                Enable room audio
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mt: 0.25 }}>
+                Starts synced playback or low-volume idle audio.
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              startIcon={<PlayArrowIcon />}
+              onClick={unlockAudio}
+              sx={{ flexShrink: 0, fontWeight: 700 }}
+            >
+              Start listening
+            </Button>
+          </Box>
         )}
 
         <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', overflow: 'hidden', pb: { xl: 2 } }}>
@@ -322,6 +379,22 @@ const CurrentSong = () => {
             </Typography>
           </Box>
         )}
+
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1.25, px: 0.5, flexShrink: 0 }}>
+          <VolumeUpIcon sx={{ color: 'rgba(255,255,255,0.75)', fontSize: 20 }} />
+          <Slider
+            size="small"
+            min={0}
+            max={100}
+            value={activeVolume}
+            onChange={(_, value) => setActiveVolume(Array.isArray(value) ? value[0] : value)}
+            aria-label="Room volume"
+            sx={{ color: '#90caf9', maxWidth: 220 }}
+          />
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', minWidth: 34 }}>
+            {activeVolume}%
+          </Typography>
+        </Stack>
       </Paper>
 
       <Snackbar
