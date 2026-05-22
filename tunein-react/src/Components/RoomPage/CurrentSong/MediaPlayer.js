@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 
-const MediaPlayer = ({ videoId, startTime = 0, muted = false, onEnded }) => {
+const MediaPlayer = ({ videoId, startTime = 0, muted = false, loop = false, onEnded, onLoop }) => {
     const playerRef = useRef(null);
     const youtubePlayerRef = useRef(null);
     const [playerInstance, setPlayerInstance] = useState(null);
@@ -113,7 +113,19 @@ const MediaPlayer = ({ videoId, startTime = 0, muted = false, onEnded }) => {
                     if (videoId) event.target.playVideo();
                 },
                 onStateChange: (event) => {
-                    if (event.data === window.YT.PlayerState.ENDED && onEnded) onEnded();
+                    if (event.data === window.YT.PlayerState.ENDED) {
+                        if (loop) {
+                            try {
+                                event.target.seekTo(0, true);
+                                event.target.playVideo();
+                                onLoop?.();
+                            } catch (error) {
+                                console.error('Error looping YouTube video:', error);
+                            }
+                            return;
+                        }
+                        if (onEnded) onEnded();
+                    }
                 },
                 onError: (event) => console.error('YouTube player error:', event.data)
             }

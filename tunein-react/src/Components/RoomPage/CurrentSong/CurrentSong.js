@@ -19,7 +19,38 @@ const CurrentSong = () => {
   const [isPaused, setIsPaused] = useState(false);
   const initialStartTimeRef = useRef(0);
   const pauseRetryRef = useRef(null);
-  const { newSocket, roomId } = useSocket();
+  const { newSocket, isConnected, roomId } = useSocket();
+
+  const playDisconnectPing = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const audioContext = new AudioContext();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.18);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
+      oscillator.onended = () => audioContext.close?.();
+    } catch (error) {
+      console.warn('Could not play disconnect ping:', error);
+    }
+  }, []);
+
+  const handleIntroLoop = useCallback(() => {
+    if (!newSocket?.connected || !isConnected) {
+      playDisconnectPing();
+    }
+  }, [newSocket, isConnected, playDisconnectPing]);
 
   // Helper: calculate and store time sync data
   const syncTimeData = useCallback((serverTime, song) => {
@@ -45,6 +76,7 @@ const CurrentSong = () => {
         setCountdownData({ countdown: 0, nextSong: null, clear: Date.now() });
       } else {
         setCurrentSong(null);
+        setIsIntroPlaying(true);
       }
     };
 
@@ -143,6 +175,9 @@ const CurrentSong = () => {
     return Math.floor((Date.now() + serverTimeDiff - currentSong.startTime) / 1000);
   }, [currentSong, serverTimeDiff, isPaused]);
 
+  const isIdleIntroLooping = isIntroPlaying && !isPaused;
+  const mediaVideoId = isIdleIntroLooping ? INTRO_VIDEO_ID : currentSong?.id;
+  const mediaStartTime = isIdleIntroLooping ? 0 : initialStartTimeRef.current;
 
   if (loading) {
     return (
@@ -189,10 +224,11 @@ const CurrentSong = () => {
         <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', overflow: 'hidden', pb: { xl: 2 } }}>
           <Box sx={{ width: { xs: '100%', xl: '90%' }, maxWidth: '100%', maxHeight: '100%', aspectRatio: '16/9', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <MediaPlayer
-              videoId={currentSong?.id || (isIntroPlaying ? INTRO_VIDEO_ID : null)}
-              startTime={currentSong ? initialStartTimeRef.current : 0}
-              muted={isIntroPlaying}
-              onEnded={() => setIsIntroPlaying(false)}
+              videoId={mediaVideoId}
+              startTime={mediaStartTime}
+              muted={isIdleIntroLooping}
+              loop={isIdleIntroLooping}
+              onLoop={handleIntroLoop}
             />
           </Box>
         </Box>
