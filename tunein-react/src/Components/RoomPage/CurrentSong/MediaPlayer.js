@@ -4,10 +4,19 @@ import { Box } from '@mui/material';
 const MediaPlayer = ({ videoId, startTime = 0, muted = false, loop = false, onEnded, onLoop }) => {
     const playerRef = useRef(null);
     const youtubePlayerRef = useRef(null);
+    const loopRef = useRef(loop);
+    const onEndedRef = useRef(onEnded);
+    const onLoopRef = useRef(onLoop);
     const [playerInstance, setPlayerInstance] = useState(null);
     const [playerReady, setPlayerReady] = useState(false);
     const [apiLoaded, setApiLoaded] = useState(!!window.YT);
     const isInitialLoadRef = useRef(true);
+
+    useEffect(() => {
+        loopRef.current = loop;
+        onEndedRef.current = onEnded;
+        onLoopRef.current = onLoop;
+    }, [loop, onEnded, onLoop]);
 
     // Handle muted prop changes
     useEffect(() => {
@@ -114,17 +123,17 @@ const MediaPlayer = ({ videoId, startTime = 0, muted = false, loop = false, onEn
                 },
                 onStateChange: (event) => {
                     if (event.data === window.YT.PlayerState.ENDED) {
-                        if (loop) {
+                        if (loopRef.current) {
                             try {
                                 event.target.seekTo(0, true);
                                 event.target.playVideo();
-                                onLoop?.();
+                                onLoopRef.current?.();
                             } catch (error) {
                                 console.error('Error looping YouTube video:', error);
                             }
                             return;
                         }
-                        if (onEnded) onEnded();
+                        if (onEndedRef.current) onEndedRef.current();
                     }
                 },
                 onError: (event) => console.error('YouTube player error:', event.data)
